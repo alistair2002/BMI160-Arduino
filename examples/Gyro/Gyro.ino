@@ -43,12 +43,16 @@ void loop() {
   int axRaw, ayRaw, azRaw;         // raw gyro values
   float ax, ay, az;
   int temp = 0;
+  float read_temp = 0;
 
   // read raw gyro measurements from device
   BMI160.readGyro(gxRaw, gyRaw, gzRaw);
 
   // temp range over 128 values (64+ and 64- offset by 23)
-  temp = 23 + (64 * BMI160.getTemperature())/SHRT_MAX;
+  read_temp = BMI160.getTemperature();
+
+  // convert the short read to a float otherwise we get rounding errors
+  temp = 23 + (64 * read_temp)/SHRT_MAX;
 
   // convert the raw gyro data to degrees/second
   gx = convertRawGyro(gxRaw);
@@ -89,7 +93,7 @@ float convertRawGyro(int gRaw) {
   // -250 maps to a raw value of -32768
   // +250 maps to a raw value of 32767
 
-	float g = (gRaw * GYRO_RANGE) / SHRT_MAX;//32768.0;
+	float g = ((float)gRaw * GYRO_RANGE) / SHRT_MAX;//32768.0;
 
   return g;
 }
@@ -100,7 +104,7 @@ float convertRawAccel(int aRaw) {
 	   if set to 4g 25% of SHRT_MAX is 1g.  2g will be
 	   reflected as about 50%.  If we set the range to
 	   2G then 2g will reflect a 100% value */
-	float a = ((aRaw * ACCEL_RANGE) / SHRT_MAX) * 9.8;
+	float a = (((float)aRaw * ACCEL_RANGE) / SHRT_MAX) * 9.8;
 
   return a;
 }
