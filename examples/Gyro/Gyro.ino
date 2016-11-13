@@ -7,11 +7,16 @@
    This sketch example demonstrates how the BMI160 on the
    Intel(R) Curie(TM) module can be used to read gyroscope data
 */
-      
+
+
 #include <BMI160Gen.h>
+#include <limits.h>
+
+const float ACCEL_RANGE = 4;
+const float GYRO_RANGE = 250;
 
 void setup() {
-  Serial.begin(9600); // initialize Serial communication
+  Serial.begin(115200); // initialize Serial communication
   while (!Serial);    // wait for the serial port to open
 
   // initialize device
@@ -20,42 +25,84 @@ void setup() {
   Serial.print("DEVICE ID: ");
   Serial.println(dev_id, HEX);
 
+  // AR calibrate gyro
+  BMI160.autoCalibrateGyroOffset();
+
    // Set the accelerometer range to 250 degrees/second
-  BMI160.setGyroRange(250);
+  BMI160.setGyroRange(GYRO_RANGE);
+  BMI160.setAccelerometerRange(ACCEL_RANGE);
+
+  BMI160.autoCalibrateAccelerometerOffset( X_AXIS, 0 );//level no G
+  BMI160.autoCalibrateAccelerometerOffset( Y_AXIS, 0 );//level no G
+  BMI160.autoCalibrateAccelerometerOffset( Z_AXIS, 1 );//flat 1g
 }
 
 void loop() {
   int gxRaw, gyRaw, gzRaw;         // raw gyro values
   float gx, gy, gz;
+  int axRaw, ayRaw, azRaw;         // raw gyro values
+  float ax, ay, az;
+  int temp = 0;
 
   // read raw gyro measurements from device
   BMI160.readGyro(gxRaw, gyRaw, gzRaw);
+
+  // temp range over 128 values (64+ and 64- offset by 23)
+  temp = 23 + (64 * BMI160.getTemperature())/SHRT_MAX;
 
   // convert the raw gyro data to degrees/second
   gx = convertRawGyro(gxRaw);
   gy = convertRawGyro(gyRaw);
   gz = convertRawGyro(gzRaw);
 
+  //read the raw accelerometer values;
+  BMI160.readAccelerometer( axRaw, ayRaw, azRaw);
+
+  // convert the raw gyro data to degrees/second
+  ax = convertRawAccel(axRaw);
+  ay = convertRawAccel(ayRaw);
+  az = convertRawAccel(azRaw);
+
+  
   // display tab-separated gyro x/y/z values
-  Serial.print("g:\t");
+  Serial.print("");
+  Serial.print(temp);
+  Serial.print(", ");
   Serial.print(gx);
-  Serial.print("\t");
+  Serial.print(", ");
   Serial.print(gy);
-  Serial.print("\t");
+  Serial.print(", ");
   Serial.print(gz);
+  Serial.print(", ");
+  Serial.print(ax);
+  Serial.print(", ");
+  Serial.print(ay);
+  Serial.print(", ");
+  Serial.print(az);
   Serial.println();
 
   delay(500);
 }
 
 float convertRawGyro(int gRaw) {
-  // since we are using 250 degrees/seconds range
+  // if we are using 250 degrees/seconds range
   // -250 maps to a raw value of -32768
   // +250 maps to a raw value of 32767
 
-  float g = (gRaw * 250.0) / 32768.0;
+	float g = (gRaw * GYRO_RANGE) / SHRT_MAX;//32768.0;
 
   return g;
+}
+
+float convertRawAccel(int aRaw) {
+
+	/* nb this value is a ratio of the range.  I.e. 
+	   if set to 4g 25% of SHRT_MAX is 1g.  2g will be
+	   reflected as about 50%.  If we set the range to
+	   2G then 2g will reflect a 100% value */
+	float a = ((aRaw * ACCEL_RANGE) / SHRT_MAX) * 9.8;
+
+  return a;
 }
 
 /*
