@@ -7,6 +7,8 @@ Intel's driver repository: https://github.com/01org/corelibs-arduino101/tree/mas
 
 BMI160: https://www.bosch-sensortec.com/bst/products/all_products/bmi160
 
+IMU example is based on https://www.arduino.cc/en/Tutorial/Genuino101CurieIMUOrientationVisualiser
+
 ## How to install
 Copy all files of this project to the your Arduino IDE library folder.
 
